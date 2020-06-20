@@ -121,6 +121,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_package_manager_path" value="npm" />
   </component>
   <component name="RunManager">
     <configuration name="phpunit.xml" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
@@ -140,6 +141,7 @@
       <updated>1592318581655</updated>
       <workItem from="1592318582749" duration="238000" />
       <workItem from="1592318821596" duration="368000" />
+      <workItem from="1592627542908" duration="111000" />
     </task>
     <servers />
   </component>
@@ -156,6 +158,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="commit" />

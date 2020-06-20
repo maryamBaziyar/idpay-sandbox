@@ -17,5 +17,5 @@
 </div>
 
 @if($step=='create' && $status==201 )
-    <button><a href="{{$response->link}}">انتقال به لینک دریافت شده</a></button>
+    <button><span id="callback-link" onClick="a_onClick()" data-link="{{$response->link}}" data-id="{{$response->id}}" data-orderId="{{$order_id}}" >انتقال به لینک دریافت شده</span></button>
 @endif

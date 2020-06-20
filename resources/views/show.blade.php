@@ -4,9 +4,11 @@
 
 @section('content')
 
-
+    <!-- Image loader -->
+    <div id='loader' style='display: none;'>
+        <img  src='{{asset('image/images.png')}}' width='32px' height='32px'>
+    </div>
     @if(is_array($activity))
-
         <div class="row">
             <div class="title"><h3>ایجاد تراکنش</h3></div>
             <div class="col-md-6">
@@ -15,13 +17,12 @@
                     <div class=" row col-md-12">
                         {{ Form::label('APIKEY', 'APIKEY', ['class' => 'col-md-3']) }}
 
-                        {{ Form::text('APIKEY',isset($activity->API_KEY)?$activity->API_KEY:Null,[isset($activity->API_KEY)?'readonly':null,'class' => ' col-md-5']) }}
+                        {{ Form::text('APIKEY',Null,['class' => ' col-md-5']) }}
                     </div>
                     <div class=" row col-md-12">
                         {{ Form::label('Sandbox', 'آزمایشگاه', ['class' => 'col-md-3']) }}
 
-                        {{ Form::checkbox('sandbox',null) }}
-
+                        <input id="sandbox" name="sandbox" value="1" type="checkbox"></input>
                     </div>
                     <div class="row col-md-12">
                         {{ Form::label('Name', 'نام', ['class' => 'col-md-3']) }}
@@ -89,9 +90,13 @@
                             </div>
                             <div class=" row col-md-12">
                                 {{ Form::label('Sandbox', 'آزمایشگاه', ['class' => 'col-md-3']) }}
+                                @if($activity->sandbox==1)
+                                    <input name="sandbox" type="checkbox" checked>
 
-                                {{ Form::checkbox('sandbox',$activity->sandbox,null,['readonly']) }}
+                                @else
+                                    <input name="sandbox" type="checkbox">
 
+                                @endif
                             </div>
                             <div class="row col-md-12">
                                 {{ Form::label('Name', 'نام', ['class' => 'col-md-3']) }}
@@ -143,7 +148,7 @@
 
                     <div class="title"><h3>انتقال به درگاه</h3></div>
                     <div class="col-md-6 callback">
-                        <button disabled><a disabled="true" id="link" href="">انتقال به لینک دریافت شده</a></button>
+                        <button disabled>انتقال به لینک دریافت شده</button>
 
                     </div>
                     <div class="col-md-6">
@@ -158,7 +163,7 @@
                 <div class="row">
                     <div class="title"><h3>بازگشت از از درگاه</h3></div>
 
-                    <div class="col-md-6">callback</div>
+                    <div class="col-md-6">return</div>
                     <div class="col-md-6">
                         {{ Form::label('مقدار بازگشتی از درگاه', 'مقدار بازگشتی از درگاه') }}
                         @php $response=json_decode($val->response) @endphp
@@ -167,110 +172,152 @@
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="title"><h3>تایید تراکنش</h3></div>
-                    <div class="col-md-6">
-                        @if($response->status==10)
+                @if(sizeof($activity->get_Activity)==3)
+                    <div class="row">
+                        <div class="title"><h3>تایید تراکنش</h3></div>
+                        <div class="col-md-6">
+                            @if($response->status==10)
+                                <div id="verifyButton">
+                                    <button onclick="verify('{{$response->id}}','{{$response->order_id}}')">تایید پرداخت
+                                    </button>
+                                </div>
 
-                            <button onclick="verify('{{$response->id}}','{{$response->order_id}}')">تایید پرداخت
-                            </button>
+                            @else
+                                {{$response->status}}
+                            @endif
+                        </div>
 
-                    @else
-                        {{$response->status}}
-                    @endif
-                    </div>
-                    @endif
-                    <div class="col-md-6" id="verify">
-                        @if($val->step=='verify')
+                        <div class="col-md-6" id="verify">
+
+                            @if($val->step=='verify')
                                 {{ Form::label('درخواست', 'درخواست', ['class' => 'col-md-3']) }}
-                                    <pre>{{$val->request}}))</pre>
-
-
-
+                                <pre>{{$val->request}}))</pre>
                                 {{ Form::label('پاسخ', 'پاسخ', ['class' => 'col-md-3']) }}
-                                    <pre> {{$val->response}} </pre>
+                                <pre> {{$val->response}} </pre>
+                            @endif
+                        </div>
+                        @endif
 
                         @endif
-                    </div>
+                        @if($val->step=='verify')
+                            <div class="row">
+                                <div class="title"><h3>تایید تراکنش</h3></div>
+                                <div class="col-md-6">
+                                    <button>تایید پرداخت</button>
+
+                                </div>
+                                <div class="col-md-6" id="verify">
+                                    khkhkhhj
+                                    {{ Form::label('درخواست', 'درخواست', ['class' => 'col-md-3']) }}
+                                    <pre>{{$val->request}}))</pre>
+                                    {{ Form::label('پاسخ', 'پاسخ', ['class' => 'col-md-3']) }}
+                                    <pre> {{$val->response}} </pre>
+                                </div>
+                                @endif
+
+                                @endforeach
+                                @endif
+
+                                @endsection
+                                @section('footer')
+
+                                    <script>
+                                        function a_onClick() {
+
+                                            link = ($('#callback-link').attr('data-link'));
+                                            order_id = ($('#callback-link').attr('data-orderId'));
+                                            id = ($('#callback-link').attr('data-id'));
+                                            $.ajaxSetup({
+                                                headers: {
+                                                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                                                }
+                                            });
+                                            $.ajax({
+                                                method: "post",
+                                                url: "{{ route('store_callback') }}",
+                                                data: {
+                                                    link: link,
+                                                    order_id: order_id,
+                                                    id: id
+                                                },
+                                                success: function (responce) {
+                                                    $("#loader").hide();
+
+                                                    window.location.replace(link);
+
+                                                },
+                                                beforeSend: function(){
+                                                    // Show image container
+                                                    $("#loader").show();
+                                                },
+                                            })
+
+                                        }
+
+                                        function payment_new() {
 
 
-                </div>
+                                            var inputs = $('#form :input');
+                                            var values = {};
+                                            inputs.each(function () {
 
+                                                values[this.name] = $(this).val();
+                                            });
+                                            if ($('#sandbox').is(':checked')) {
 
+                                                values['sandbox'] = 1;
+                                            } else {
+                                                values['sandbox'] = 0;
+                                            }
+                                            $.ajaxSetup({
+                                                headers: {
+                                                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                                                }
+                                            });
+                                            $.ajax({
+                                                method: "post",
+                                                url: "{{ route('store') }}",
+                                                data: {values},
+                                                success: function (responce) {
+                                                    $("#loader").hide();
 
-                @endforeach
+                                                    $('#create').show();
+                                                    // $('#request-create').append(responce.request);
+                                                    // $('#response-create').append(responce.response.link);
+                                                    $('#create').html(responce);
+                                                    // $('#form :input').attr('readonly');
+                                                },
+                                                beforeSend: function () {
+                                                    // Show image container
+                                                    $("#loader").show();
+                                                },
+                                            })
+                                        }
 
+                                        function verify(id, order_id) {
+                                            $.ajaxSetup({
+                                                headers: {
+                                                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                                                }
+                                            });
+                                            $.ajax({
+                                                method: "POST",
+                                                url: "{{route('verify')}}",
+                                                data: {
+                                                    id: id,
+                                                    order_id: order_id
+                                                },
+                                                success: function (responce) {
+                                                    $('#loader').hide();
+                                                    $('#verifyButton').html('<button>تایید پرداخت</button>');
+                                                    $('#verify').html(responce)
+                                                }, beforeSend: function () {
+                                                    // Show image container
+                                                    $("#loader").show();
+                                                },
+                                            })
 
-                {{--        <div class="form-control col-md-12" style="height: Auto">--}}
-                {{--            {{ Form::label('Request', 'Request', ['class' => 'col-md-3']) }}--}}
-                {{--            <div class="col-md-7">--}}
-                {{--                <pre>{{$val->request}}  </pre>--}}
-                {{--            </div>--}}
-                {{--        </div>--}}
+                                        }
 
-
-                {{--        <div class="form-control col-md-12" style="height: Auto">--}}
-                {{--            {{ Form::label('Response', 'Response', ['class' => 'col-md-3']) }}--}}
-                {{--            <div class="col-md-7">--}}
-                {{--                <pre> {{$val->response}}</pre>--}}
-                {{--            </div>--}}
-                {{--            @php    $response=json_decode($val->response);  @endphp--}}
-                {{--        </div>--}}
-
-
-
-            @endif
-@endsection
-@section('footer')
-
-    <script>
-        function payment_new() {
-            var inputs = $('#form :input');
-            var values = {};
-            inputs.each(function () {
-
-                values[this.name] = $(this).val();
-            });
-
-            $.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-            $.ajax({
-                method: "post",
-                url: "{{ route('store') }}",
-                data: {values},
-                success: function (responce) {
-                    $('#create').show();
-                    // $('#request-create').append(responce.request);
-                    // $('#response-create').append(responce.response.link);
-                    $('#create').html(responce);
-                    // $('#form :input').attr('readonly');
-                },
-            })
-        }
-
-        function verify(id, order_id) {
-            $.ajaxSetup({
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-            });
-            $.ajax({
-                method: "POST",
-                url: "{{route('verify')}}",
-                data: {
-                    id: id,
-                    order_id: order_id
-                },
-                success: function (responce) {
-
-                    $('#verify').html(responce)
-                },
-            })
-
-        }
-
-    </script>
+                                    </script>
 @endsection

@@ -32,21 +32,23 @@ class ActivityController extends Controller
      */
     public function store(Request $request)
     {
+        //set params for insert in db and connect to payment api IDPay
         $params = [
             'API_KEY' => $request->values['APIKEY'],
-            'sandbox' => ($request->values['sandbox']) ? 1 : 0,
+            'sandbox' => $request->values['sandbox'],
             'name' => $request->values['name'],
             'phone' => $request->values['phone'],
             'mail' => $request->values['mail'],
             'amount' => $request->values['amount'],
             'reseller' => $request->values['reseller'],
+            'status' => 'processing'
         ];
 
         $params['order_id'] = order::insertGetId($params);
         $params['desc'] = 'توضیحات پرداخت کننده';
         $params['callback'] = 'http://127.0.0.1:8000/callback';
-        $params['reseller'] = null;
 
+        //set value for request field order table
         $_request['params'] = $params;
         $_request['url'] = 'POST: https://api.idpay.ir/v1.1/payment';
         $_request['header'] = [
@@ -55,8 +57,9 @@ class ActivityController extends Controller
             'X-SANDBOX' => $params['sandbox']
         ];
 
-        $client = new Client();
 
+        //connect to Payment API IDPay
+        $client = new Client();
         $res = $client->request('POST', 'https://api.idpay.ir/v1.1/payment',
             [
                 'json' => $params,
@@ -64,52 +67,70 @@ class ActivityController extends Controller
                 'http_errors' => false
             ]);
 
+
+
+        if ($res->getStatusCode() == 201) {
+            $response = json_decode($res->getBody());
+
+            //insert return id from API in order table
+            Order::where('id', $params['order_id'])
+                ->update(['return_id' => $response->id]);
+        }
+
+        //set value for activity table
         $activity = [
             'order_id' => $params['order_id'],
             'step' => 'create',
             'request' => json_encode($_request),
             'response' => $res->getBody()
         ];
-//
-        Activity::insertGetId($activity);
+        Activity::insert($activity);
+
+
+        //set value for show in view
         $data['response'] = $activity['response'];
         $data['request'] = $activity['request'];
         $data['step'] = $activity['step'];
         $data['status'] = $res->getStatusCode();
-
+        $data['order_id'] = $params['order_id'];
 
         return view('create_ajax', $data);
 
     }
 
-
+    /*
+     * after connect in API IDPay return this function
+     */
     public function callback(Request $request)
     {
 
-        $activity = array(
-            'order_id' => $request['order_id'],
-            'step' => 'redirect',
-            'request' => json_encode(['url https://idpay.ir/p/ws-sandbox/' . $request['id'] . '/' . $request['order_id']]),
-            'response' => ''
-        );
 
-        Activity::insertGetId($activity);
+        //check pay amount is equal orginal amount
+        $order = Order::where('id', $request->order_id)->first();
+        if ($order->amount != $request->amount) {
+            $request->request->add(['status' => 405]);
+        }
 
 
+        $request->request->add(['message' => $this->get_status_description($request->status)]);
+
+        //set data for insert in activity table
         $activity = array(
             'order_id' => $request['order_id'],
             'step' => 'return',
             'request' => '',
             'response' => json_encode($request->all())
         );
-        Activity::insertGetId($activity);
-
+        Activity::insert($activity);
 
 
         return redirect()->route('show', $request['order_id']);
 
     }
 
+    /*
+     * set message
+     */
     public function get_status_description($status)
     {
         switch ($status) {
@@ -150,19 +171,24 @@ class ActivityController extends Controller
             case 200:
                 return 'به دریافت کننده واریز شد';
                 break;
+            case 405:
+                return 'تایید پرداخت امکان پذیر نیست.';
+                break;
 
         }
 
     }
 
-
+    /*
+     * connect to verify API IDPay and check double spendding
+     */
     public function verify(Request $request)
     {
 
-        $params = array(
+        $params = [
             'id' => $request['id'],
             'order_id' => $request['order_id'],
-        );
+        ];
         $order = order::where('id', $request['order_id'])->first();
 
         $_request['params'] = $params;
@@ -173,26 +199,56 @@ class ActivityController extends Controller
             'X-SANDBOX' => $order['sandbox']
         ];
 
+        //connect to verify API IDPay
         $client = new Client();
-
         $res = $client->request('POST', 'https://api.idpay.ir/v1.1/payment/verify',
             [
                 'json' => $params,
-                'headers' => $_request['header']
+                'headers' => $_request['header'],
+                'http_errors' => false
+
             ]);
 
+        $response = json_decode($res->getBody());
 
+        //double sppending
+        if ($request['order_id'] != $response->order_id || $request['id'] != $response->id) {
+            $response->status = 405;
+
+        }
+
+        //insert in activity table
         $activity = [
             'order_id' => $request['order_id'],
             'step' => 'verify',
             'request' => json_encode($_request),
             'response' => $res->getBody()
         ];
+        Activity::insert($activity);
 
-        Activity::insertGetId($activity);
+        //update staus
+        Order::where('id', $params['order_id'])
+            ->update(['status' => 'complete']);
+
+        //set value for show in view
         $data['response'] = $activity['response'];
         $data['request'] = $activity['request'];
         $data['step'] = $activity['step'];
         return view('create_ajax', $data);
+    }
+
+    public function store_callback(Request $request)
+    {
+
+        //insert in activity table
+        $activity = [
+            'order_id' => $request['order_id'],
+            'step' => 'redirect',
+            'request' => json_encode(['url' . $request['link']]),
+            'response' => ''
+        ];
+        Activity::insert($activity);
+
+
     }
 }
