@@ -133,16 +133,23 @@
                         <lable>درخواست</lable>
 
                         <textarea class="result" id="request-create" style="direction: ltr">
-                            @php $request_create=json_decode($val->request,JSON_PRETTY_PRINT) @endphp
-                            @php print_r($request_create) @endphp
-                        </textarea>
 
+                        </textarea>
+                        <script>
+                            var r =@php echo $val->request @endphp;
+                            var textedJson = JSON.stringify(r, undefined, 4);
+                            $('#request-create').text(textedJson);
+                        </script>
 
                         <lable>پاسخ</lable>
                         <textarea id="response-create" style="direction: ltr">
-      @php $response_create=json_decode($val->request,JSON_PRETTY_PRINT) @endphp
-                            @php print_r($response_create) @endphp                        </textarea>
 
+                        </textarea>
+                        <script>
+                            var r =@php echo $val->response @endphp;
+                            var textedJson = JSON.stringify(r, undefined, 4);
+                            $('#response-create').text(textedJson);
+                        </script>
                     </div>
                 </div>
             @endif
@@ -157,11 +164,13 @@
                     </div>
                     <div class="col-md-6">
                         <lable>Callback</lable>
-                        @php $request_callback=json_decode($val->request,JSON_PRETTY_PRINT) @endphp
-                        <textarea>
-                            @php print_r($request_callback);@endphp
+                        <textarea id="request-callback">
                         </textarea>
-
+                        <script>
+                            var r =@php echo $val->request @endphp;
+                            var textedJson = JSON.stringify(r, undefined, 4);
+                            $('#request-callback').text(textedJson);
+                        </script>
                     </div>
                 </div>
             @endif
@@ -175,7 +184,14 @@
                         {{ Form::label('مقدار بازگشتی از درگاه', 'مقدار بازگشتی از درگاه') }}
                         @php $response=json_decode($val->response,JSON_PRETTY_PRINT) @endphp
                         <div style="direction: ltr">
-                            <textarea>@php print_r($response) @endphp </textarea>
+                            <textarea id="response-return">@php print_r($response) @endphp </textarea>
+
+                            <script>
+                                var r =@php echo $val->response @endphp;
+                                var textedJson = JSON.stringify(r, undefined, 4);
+                                $('#response-return').text(textedJson);
+                            </script>
+
                         </div>
                     </div>
                 </div>
@@ -183,6 +199,7 @@
                     <div class="row">
                         <div class="title"><h3>تایید تراکنش</h3></div>
                         <div class="col-md-6">
+                            @php $response=json_decode($val->response) @endphp
                             @if($response->status==10)
                                 <div id="verifyButton">
                                     <button onclick="verify('{{$response->id}}','{{$response->order_id}}')">
@@ -191,7 +208,8 @@
                                 </div>
 
                             @else
-                                {{$response->status}}
+                                @if(isset($response->status))){{$response->status}}
+                                @endif
                             @endif
                         </div>
 
@@ -213,12 +231,23 @@
                                 </div>
                                 <div class="col-md-6" id="verify">
                                     {{ Form::label('درخواست', 'درخواست', ['class' => 'col-md-3']) }}
-                                    @php $request=json_decode($val->request,JSON_PRETTY_PRINT) @endphp
-                                    <textarea>@php print_r($request) @endphp</textarea>
-                                    {{ Form::label('پاسخ', 'پاسخ', ['class' => 'col-md-3']) }}
-                                    @php $response=json_decode($val->response,JSON_PRETTY_PRINT) @endphp
+                                    <textarea id="request-verify"> </textarea>
+                                    <script>
+                                        var r =@php echo $val->request @endphp;
+                                        var textedJson = JSON.stringify(r, undefined, 4);
+                                        $('#request-verify').text(textedJson);
+                                    </script>
 
-                                    <textarea>@php print_r($response) @endphp</textarea>
+
+
+                                    {{ Form::label('پاسخ', 'پاسخ', ['class' => 'col-md-3']) }}
+
+                                    <textarea id="response-verify"></textarea>
+                                    <script>
+                                        var r =@php echo $val->response @endphp;
+                                        var textedJson = JSON.stringify(r, undefined, 4);
+                                        $('#response-verify').text(textedJson);
+                                    </script>
                                 </div>
                                 @endif
 
